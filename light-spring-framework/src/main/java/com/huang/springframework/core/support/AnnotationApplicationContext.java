@@ -1,6 +1,7 @@
 package com.huang.springframework.core.support;
 
 
+import cn.hutool.core.util.StrUtil;
 import com.huang.springframework.core.annotation.Component;
 import com.huang.springframework.core.annotation.Controller;
 import com.huang.springframework.core.annotation.Service;
@@ -35,21 +36,21 @@ public class AnnotationApplicationContext extends DefaultBeanFactory {
     }
 
     public void refresh() {
-        Set<Class> classSet = doScan();
+        Set<Class<?>> classSet = doScan();
         loadBeanDefinitions(classSet);
         finishBeanInitialization();
     }
 
-    private Set<Class> doScan() {
+    private Set<Class<?>> doScan() {
         String packageName = properties.getProperty("scanPackage");
         if (packageName == null) {
             log.error("没有配置包扫描路径");
             return new HashSet<>();
         }
-        return ClassUtil.extractPackageClass(packageName);
+        return cn.hutool.core.util.ClassUtil.scanPackage(packageName);
     }
 
-    private void loadBeanDefinitions(Set<Class> classSet) {
+    private void loadBeanDefinitions(Set<Class<?>> classSet) {
         for (Class clazz : classSet) {
             for (Class<? extends Annotation> annotation : BEAN_ANNOTATION) {
                 //如果类上面标记了定义的注解
@@ -58,7 +59,7 @@ public class AnnotationApplicationContext extends DefaultBeanFactory {
                     beanDefinition.setBeanClass(clazz);
                     beanDefinition.setScope("singleton");
                     beanDefinition.setLazyInit(false);
-                    registerBeanDefinition(toLowerFirstWord(clazz.getSimpleName()), beanDefinition);
+                    registerBeanDefinition(StrUtil.lowerFirst(clazz.getSimpleName()), beanDefinition);
                     break;
                 }
             }
@@ -76,14 +77,5 @@ public class AnnotationApplicationContext extends DefaultBeanFactory {
                 }
             }
         });
-    }
-
-    /**
-     * 把字符串的首字母小写
-     */
-    private String toLowerFirstWord(String name) {
-        char[] charArray = name.toCharArray();
-        charArray[0] += 32;
-        return String.valueOf(charArray);
     }
 }

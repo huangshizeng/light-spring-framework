@@ -1,5 +1,7 @@
 package com.huang.demo.controller;
 
+import com.huang.demo.service.TestService;
+import com.huang.springframework.core.annotation.Autowired;
 import com.huang.springframework.core.annotation.Controller;
 
 /**
@@ -10,4 +12,11 @@ import com.huang.springframework.core.annotation.Controller;
 
 @Controller
 public class TestController {
+
+    @Autowired
+    private TestService testService;
+
+    public void print() {
+        testService.print();
+    }
 }

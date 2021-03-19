@@ -1,12 +1,18 @@
 package com.huang.springframework.core.support;
 
 
+import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.ReflectUtil;
 import com.huang.springframework.core.BeanFactory;
+import com.huang.springframework.core.annotation.Autowired;
 import com.huang.springframework.core.config.BeanDefinition;
 
 import java.io.Closeable;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -58,6 +64,8 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
             // 使用工厂bean方法创建bean
             bean = createBeanByFactoryBean(beanDefinition);
         }
+        // @Autowire注入
+        populateBean(bean);
         // 初始化方法
         doInit(beanDefinition, bean);
         // 如果是单例，则将实例添加到beanMap中，后面获取bean时直接从map中获取
@@ -65,6 +73,31 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
             beanMap.put(name, bean);
         }
         return bean;
+    }
+
+    private void populateBean(Object bean) throws Exception {
+        Field[] fields = bean.getClass().getDeclaredFields();
+        if (ArrayUtil.isEmpty(fields)) {
+            return;
+        }
+        for (Field field : fields) {
+            // 字段被@Autowired注解标记，表明需要注入属性
+            if (field.isAnnotationPresent(Autowired.class)) {
+                List<String> beanName = new ArrayList<>();
+                final Class<?> fieldClass = field.getType();
+                beanDefinitionMap.forEach((k, beanDefinition) -> {
+                    if (fieldClass.isAssignableFrom(beanDefinition.getBeanClass())) {
+                        beanName.add(k);
+                    }
+                });
+                if (beanName.size() != 1) {
+                    throw new RuntimeException("符合注入属性的bean有且只能有一个");
+                } else {
+                    // 使用反射注入
+                    ReflectUtil.setFieldValue(bean, field, getBean(beanName.get(0)));
+                }
+            }
+        }
     }
 
     @Override

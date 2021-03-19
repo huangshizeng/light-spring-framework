@@ -1,5 +1,6 @@
 package com.huang.springframework.core;
 
+import com.huang.demo.controller.TestController;
 import com.huang.springframework.core.support.AnnotationApplicationContext;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,7 @@ public class ApplicationContextTest {
     @Test
     public void test() throws Exception {
         AnnotationApplicationContext applicationContext = new AnnotationApplicationContext();
-        System.out.println(applicationContext.getBean("testController"));
+        TestController testController = (TestController) applicationContext.getBean("testController");
+        testController.print();
     }
 }
