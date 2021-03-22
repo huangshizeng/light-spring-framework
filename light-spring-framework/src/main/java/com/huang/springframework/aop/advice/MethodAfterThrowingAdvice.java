@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
  * @description:
  */
 
-public interface MethodAfterThrowing {
+public interface MethodAfterThrowingAdvice {
 
     void afterThrowing(Object target, Method method, Object[] args, Throwable throwable) throws Throwable;
 }

@@ -1,5 +1,6 @@
 package com.huang.springframework.aop;
 
+import cn.hutool.core.collection.CollectionUtil;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
@@ -27,12 +28,17 @@ public class CglibDynamicAopProxy extends AbstractAopProxy implements MethodInte
     @Override
     public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
         List<Advisor> advisorList = findAdvisorsThatCanApply(method);
-        if (advisorList.size() > 0) {
-            invokeBeforeAdvices(advisorList, method, args);
+        if (CollectionUtil.isEmpty(advisorList)) {
+            return methodProxy.invokeSuper(getTarget(), args);
+        }
+        invokeBeforeAdvices(advisorList, method, args);
+        try {
             Object returnValue = method.invoke(getTarget(), args);
             return invokeAfterAdvices(advisorList, method, args, returnValue);
-        } else {
-            return method.invoke(getTarget(), args);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            invokeAfterThrowingAdvices(advisorList, method, args, ex);
         }
+        return null;
     }
 }

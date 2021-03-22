@@ -1,6 +1,7 @@
 package com.huang.springframework.aop;
 
 import com.huang.springframework.aop.advice.MethodAfterReturningAdvice;
+import com.huang.springframework.aop.advice.MethodAfterThrowingAdvice;
 import com.huang.springframework.aop.advice.MethodBeforeAdvice;
 
 import java.lang.reflect.Method;
@@ -56,5 +57,13 @@ public abstract class AbstractAopProxy implements AopProxy {
             }
         }
         return returnValue;
+    }
+
+    public void invokeAfterThrowingAdvices(List<Advisor> advisorList, Method method, Object[] args, Exception ex) throws Throwable {
+        for (Advisor advisor : advisorList) {
+            if (advisor.getAdvice() instanceof MethodAfterThrowingAdvice) {
+                ((MethodAfterThrowingAdvice) advisor.getAdvice()).afterThrowing(target, method, args, ex);
+            }
+        }
     }
 }

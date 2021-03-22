@@ -1,5 +1,7 @@
 package com.huang.springframework.aop;
 
+import cn.hutool.core.collection.CollectionUtil;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -25,12 +27,16 @@ public class JdkDynamicAopProxy extends AbstractAopProxy implements InvocationHa
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         List<Advisor> advisorList = findAdvisorsThatCanApply(method);
-        if (advisorList.size() > 0) {
-            invokeBeforeAdvices(advisorList, method, args);
-            Object returnValue = method.invoke(getTarget(), args);
-            return invokeAfterAdvices(advisorList, method, args, returnValue);
-        } else {
+        if (CollectionUtil.isEmpty(advisorList)) {
             return method.invoke(getTarget(), args);
         }
+        invokeBeforeAdvices(advisorList, method, args);
+        try {
+            Object returnValue = method.invoke(getTarget(), args);
+            return invokeAfterAdvices(advisorList, method, args, returnValue);
+        } catch (Exception ex) {
+            invokeAfterThrowingAdvices(advisorList, method, args, ex);
+        }
+        return null;
     }
 }
