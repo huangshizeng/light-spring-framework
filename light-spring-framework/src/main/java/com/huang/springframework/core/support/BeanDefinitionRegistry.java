@@ -3,6 +3,8 @@ package com.huang.springframework.core.support;
 
 import com.huang.springframework.core.config.BeanDefinition;
 
+import java.util.List;
+
 /**
  * bean定义注册接口，通过该接口实例将BeanDefinition注册到bean工厂中
  *
@@ -36,6 +38,8 @@ public interface BeanDefinitionRegistry {
      * @throws Exception 没有该bean定义
      */
     BeanDefinition getBeanDefinition(String beanName) throws Exception;
+
+    List<String> getBeanDefinitionNames();
 
     /**
      * 是否包含指定name的bean定义

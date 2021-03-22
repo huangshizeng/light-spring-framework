@@ -16,7 +16,7 @@ public class TestController {
     @Autowired
     private TestService testService;
 
-    public void print() {
+    public void print(String p1, int p2) {
         testService.print();
     }
 }

@@ -3,9 +3,11 @@ package com.huang.springframework.core.support;
 
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ReflectUtil;
+import com.huang.springframework.aop.processor.AutoProxyCreator;
 import com.huang.springframework.core.BeanFactory;
 import com.huang.springframework.core.annotation.Autowired;
 import com.huang.springframework.core.config.BeanDefinition;
+import com.huang.springframework.core.config.BeanPostProcessor;
 
 import java.io.Closeable;
 import java.lang.reflect.Field;
@@ -15,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 默认的bean工厂
@@ -34,6 +37,8 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
      * 存放单例bean实例
      */
     private Map<String, Object> beanMap = new ConcurrentHashMap<>(256);
+
+    private List<BeanPostProcessor> beanPostProcessors = new CopyOnWriteArrayList<>();
 
     /**
      * 根据bean的名字获取bean实例,里面主要做的工作是创建bean实例和对bean实例进行初始化
@@ -67,7 +72,7 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
         // @Autowire注入
         populateBean(bean);
         // 初始化方法
-        doInit(beanDefinition, bean);
+        bean = initializeBean(beanDefinition, bean, name);
         // 如果是单例，则将实例添加到beanMap中，后面获取bean时直接从map中获取
         if (beanDefinition.isSingleton()) {
             beanMap.put(name, bean);
@@ -131,8 +136,21 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
     }
 
     @Override
+    public List<String> getBeanDefinitionNames() {
+        return new ArrayList<>(beanDefinitionMap.keySet());
+    }
+
+    @Override
     public boolean containsBeanDefinition(String beanName) {
         return beanDefinitionMap.containsKey(beanName);
+    }
+
+    public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
+        this.beanPostProcessors.add(beanPostProcessor);
+    }
+
+    public void registerBeanPostProcessors(DefaultBeanFactory beanFactory) {
+        addBeanPostProcessor(new AutoProxyCreator(beanFactory));
     }
 
     /**
@@ -164,16 +182,32 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
     }
 
     /**
-     * 执行初始化方法
+     * 执行初始化方法，并进行aop增强
      *
      * @param beanDefinition bean定义
      * @param bean           bean实例
      */
-    private void doInit(BeanDefinition beanDefinition, Object bean) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private Object initializeBean(BeanDefinition beanDefinition, Object bean, String beanName) throws Exception {
+        bean = applyBeanPostProcessorsBeforeInitialization(bean, beanName);
         String initMethodName = beanDefinition.getInitMethodName();
         if (initMethodName != null) {
             bean.getClass().getMethod(initMethodName).invoke(bean);
         }
+        return applyBeanPostProcessorsAfterInitialization(bean, beanName);
+    }
+
+    private Object applyBeanPostProcessorsBeforeInitialization(Object bean, String beanName) {
+        for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
+            bean = beanPostProcessor.postProcessBeforeInitialization(bean, beanName);
+        }
+        return bean;
+    }
+
+    private Object applyBeanPostProcessorsAfterInitialization(Object bean, String beanName) throws Exception {
+        for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
+            bean = beanPostProcessor.postProcessAfterInitialization(bean, beanName);
+        }
+        return bean;
     }
 
     /**

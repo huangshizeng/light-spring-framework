@@ -16,7 +16,7 @@ public interface BeanPostProcessor {
     }
 
     @Nullable
-    default Object postProcessAfterInitialization(Object bean, String beanName) {
+    default Object postProcessAfterInitialization(Object bean, String beanName) throws Exception {
         return bean;
     }
 }

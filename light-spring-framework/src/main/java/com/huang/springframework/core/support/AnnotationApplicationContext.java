@@ -2,6 +2,7 @@ package com.huang.springframework.core.support;
 
 
 import cn.hutool.core.util.StrUtil;
+import com.huang.springframework.aop.annotation.Aspect;
 import com.huang.springframework.core.annotation.Component;
 import com.huang.springframework.core.annotation.Controller;
 import com.huang.springframework.core.annotation.Service;
@@ -24,7 +25,7 @@ public class AnnotationApplicationContext extends DefaultBeanFactory {
     /**
      * 标记为bean的注解列表
      */
-    private final List<Class<? extends Annotation>> BEAN_ANNOTATION = Arrays.asList(Controller.class, Service.class, Component.class);
+    private final List<Class<? extends Annotation>> BEAN_ANNOTATION = Arrays.asList(Controller.class, Service.class, Component.class, Aspect.class);
 
     public AnnotationApplicationContext(String propertiesPath) throws Exception {
         this.properties = ClassUtil.resolveClassPathResource(propertiesPath);
@@ -36,6 +37,7 @@ public class AnnotationApplicationContext extends DefaultBeanFactory {
     }
 
     public void refresh() {
+        registerBeanPostProcessors(this);
         Set<Class<?>> classSet = doScan();
         loadBeanDefinitions(classSet);
         finishBeanInitialization();
