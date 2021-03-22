@@ -2,6 +2,7 @@ package com.huang.demo.aspect;
 
 import com.huang.springframework.aop.advice.MethodAfterReturningAdvice;
 import com.huang.springframework.aop.annotation.Aspect;
+import com.huang.springframework.aop.annotation.Order;
 
 import java.lang.reflect.Method;
 
@@ -12,6 +13,7 @@ import java.lang.reflect.Method;
  */
 
 @Aspect("execution(* com.huang.demo.controller.TestController.*(..))")
+@Order
 public class LogAfter implements MethodAfterReturningAdvice {
 
     @Override

@@ -5,6 +5,7 @@ import com.huang.springframework.aop.AopProxyFactory;
 import com.huang.springframework.aop.AspectJExpressionPointcut;
 import com.huang.springframework.aop.advice.Advice;
 import com.huang.springframework.aop.annotation.Aspect;
+import com.huang.springframework.aop.annotation.Order;
 import com.huang.springframework.core.config.BeanDefinition;
 import com.huang.springframework.core.config.BeanPostProcessor;
 import com.huang.springframework.core.support.DefaultBeanFactory;
@@ -13,7 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author: hsz
@@ -79,7 +82,11 @@ public class AutoProxyCreator implements BeanPostProcessor {
     private List<Advisor> getMatchedAdvisors(Object bean) throws Exception {
         // 获取全部advisor
         List<Advisor> allAdvisors = findAllAdvisors();
-        return findAdvisorsThatCanApply(allAdvisors, bean.getClass());
+        List<Advisor> matchedAdvisors = findAdvisorsThatCanApply(allAdvisors, bean.getClass());
+        if (!matchedAdvisors.isEmpty()) {
+            matchedAdvisors = sortAdvisors(matchedAdvisors);
+        }
+        return matchedAdvisors;
     }
 
     private List<Advisor> findAllAdvisors() throws Exception {
@@ -137,7 +144,15 @@ public class AutoProxyCreator implements BeanPostProcessor {
 
     private Advisor getAdvisor(Class<?> clazz, String beanName) throws Exception {
         Aspect aspect = clazz.getAnnotation(Aspect.class);
-        return new Advisor((Advice) beanFactory.getBean(beanName), aspect.value());
+        Order order = clazz.getAnnotation(Order.class);
+        if (order == null) {
+            return new Advisor((Advice) beanFactory.getBean(beanName), aspect.value());
+        }
+        return new Advisor(order.value(), (Advice) beanFactory.getBean(beanName), aspect.value());
+    }
+
+    private List<Advisor> sortAdvisors(List<Advisor> matchedAdvisors) {
+        return matchedAdvisors.stream().sorted(Comparator.comparing(Advisor::getOrder)).collect(Collectors.toList());
     }
 
     private Object createProxy(Object bean, List<Advisor> matchAdvisors) {
