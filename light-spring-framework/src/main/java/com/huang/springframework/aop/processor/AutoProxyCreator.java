@@ -7,7 +7,7 @@ import com.huang.springframework.aop.advice.Advice;
 import com.huang.springframework.aop.annotation.Aspect;
 import com.huang.springframework.aop.annotation.Order;
 import com.huang.springframework.core.config.BeanDefinition;
-import com.huang.springframework.core.config.BeanPostProcessor;
+import com.huang.springframework.core.processor.EarlyReferenceBeanProcessor;
 import com.huang.springframework.core.support.DefaultBeanFactory;
 import com.sun.istack.internal.Nullable;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +16,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
  */
 
 @Slf4j
-public class AutoProxyCreator implements BeanPostProcessor {
+public class AutoProxyCreator implements EarlyReferenceBeanProcessor {
 
     private DefaultBeanFactory beanFactory;
     /**
@@ -39,17 +41,25 @@ public class AutoProxyCreator implements BeanPostProcessor {
      */
     private final List<Advisor> advisorsCache = new ArrayList<>();
 
+    private final Map<Object, Object> earlyProxyReferences = new ConcurrentHashMap<>(16);
+
     public AutoProxyCreator(DefaultBeanFactory beanFactory) {
         this.beanFactory = beanFactory;
     }
 
     @Override
+    public Object getEarlyBeanReference(Object bean, String beanName) throws Exception {
+        earlyProxyReferences.put(beanName, bean);
+        return wrapIfNecessary(bean);
+    }
+
+    @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws Exception {
-        if (bean != null) {
+        if (bean != null && earlyProxyReferences.get(beanName) != null) {
             // 如果它适合被代理，则需要封装指定的bean
             return wrapIfNecessary(bean);
         }
-        return null;
+        return earlyProxyReferences.remove(beanName);
     }
 
     private Object wrapIfNecessary(Object bean) throws Exception {

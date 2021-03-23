@@ -7,7 +7,8 @@ import com.huang.springframework.aop.processor.AutoProxyCreator;
 import com.huang.springframework.core.BeanFactory;
 import com.huang.springframework.core.annotation.Autowired;
 import com.huang.springframework.core.config.BeanDefinition;
-import com.huang.springframework.core.config.BeanPostProcessor;
+import com.huang.springframework.core.processor.BeanPostProcessor;
+import com.huang.springframework.core.processor.EarlyReferenceBeanProcessor;
 
 import java.io.Closeable;
 import java.lang.reflect.Field;
@@ -36,7 +37,12 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
     /**
      * 存放单例bean实例
      */
-    private Map<String, Object> beanMap = new ConcurrentHashMap<>(256);
+    private final Map<String, Object> beanMap = new ConcurrentHashMap<>(256);
+
+    /**
+     * 早期单例对象的缓存：Bean名称到Bean实例的映射，保存刚创建出来的实例，但还没设置属性等
+     */
+    private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<>(16);
 
     private List<BeanPostProcessor> beanPostProcessors = new CopyOnWriteArrayList<>();
 
@@ -48,7 +54,7 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
      */
     @Override
     public Object getBean(String name) throws Exception {
-        Object bean = beanMap.get(name);
+        Object bean = getSingleton(name);
         if (bean != null) {
             return bean;
         }
@@ -69,13 +75,45 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
             // 使用工厂bean方法创建bean
             bean = createBeanByFactoryBean(beanDefinition);
         }
+        addEarlySingleton(name, getEarlyBeanReference(name, bean));
         // @Autowire注入
         populateBean(bean);
         // 初始化方法
         bean = initializeBean(beanDefinition, bean, name);
         // 如果是单例，则将实例添加到beanMap中，后面获取bean时直接从map中获取
         if (beanDefinition.isSingleton()) {
-            beanMap.put(name, bean);
+            addSingleton(name, bean);
+        }
+        return bean;
+    }
+
+    private Object getEarlyBeanReference(String name, Object bean) throws Exception {
+        Object exposedObject = bean;
+        for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
+            if (beanPostProcessor instanceof EarlyReferenceBeanProcessor) {
+                exposedObject = ((EarlyReferenceBeanProcessor) beanPostProcessor).getEarlyBeanReference(bean, name);
+            }
+        }
+        return exposedObject;
+    }
+
+    protected void addEarlySingleton(String beanName, Object earlyObject) {
+        synchronized (this.beanMap) {
+            this.earlySingletonObjects.put(beanName, earlyObject);
+        }
+    }
+
+    protected void addSingleton(String beanName, Object singletonObject) {
+        synchronized (this.beanMap) {
+            this.beanMap.put(beanName, singletonObject);
+            this.earlySingletonObjects.remove(beanName);
+        }
+    }
+
+    private Object getSingleton(String beanName) {
+        Object bean = this.beanMap.get(beanName);
+        if (bean == null) {
+            bean = this.earlySingletonObjects.get(beanName);
         }
         return bean;
     }

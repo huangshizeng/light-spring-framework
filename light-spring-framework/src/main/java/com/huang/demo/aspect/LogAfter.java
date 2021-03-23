@@ -18,7 +18,7 @@ public class LogAfter implements MethodAfterReturningAdvice {
 
     @Override
     public Object afterReturning(Object target, Method method, Object[] args, Object returnValue) throws Throwable {
-        System.out.println("【LogBefore】方法调用后:");
+        System.out.println("【LogAfter】方法调用后:");
         return null;
     }
 }

@@ -29,7 +29,7 @@ public class CglibDynamicAopProxy extends AbstractAopProxy implements MethodInte
     public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
         List<Advisor> advisorList = findAdvisorsThatCanApply(method);
         if (CollectionUtil.isEmpty(advisorList)) {
-            return methodProxy.invokeSuper(getTarget(), args);
+            return method.invoke(getTarget(), args);
         }
         invokeBeforeAdvices(advisorList, method, args);
         try {
