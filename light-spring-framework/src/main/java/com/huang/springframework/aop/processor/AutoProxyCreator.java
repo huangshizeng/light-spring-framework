@@ -154,11 +154,10 @@ public class AutoProxyCreator implements EarlyReferenceBeanProcessor {
 
     private Advisor getAdvisor(Class<?> clazz, String beanName) throws Exception {
         Aspect aspect = clazz.getAnnotation(Aspect.class);
-        Order order = clazz.getAnnotation(Order.class);
-        if (order == null) {
-            return new Advisor((Advice) beanFactory.getBean(beanName), aspect.value());
+        if (clazz.isAnnotationPresent(Order.class)) {
+            return new Advisor(clazz.getAnnotation(Order.class).value(), (Advice) beanFactory.getBean(beanName), aspect.value());
         }
-        return new Advisor(order.value(), (Advice) beanFactory.getBean(beanName), aspect.value());
+        return new Advisor((Advice) beanFactory.getBean(beanName), aspect.value());
     }
 
     private List<Advisor> sortAdvisors(List<Advisor> matchedAdvisors) {
