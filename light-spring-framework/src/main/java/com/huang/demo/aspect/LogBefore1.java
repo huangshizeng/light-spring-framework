@@ -1,7 +1,6 @@
 package com.huang.demo.aspect;
 
 import com.huang.springframework.aop.advice.MethodBeforeAdvice;
-import com.huang.springframework.aop.annotation.Aspect;
 import com.huang.springframework.aop.annotation.Order;
 
 import java.lang.reflect.Method;
@@ -12,7 +11,7 @@ import java.lang.reflect.Method;
  * @description:
  */
 
-@Aspect("execution(* com.huang.demo.controller.TestController.*(..))")
+//@Aspect("execution(* com.huang.demo.controller.TestController.*(..))")
 @Order(2)
 public class LogBefore1 implements MethodBeforeAdvice {
 

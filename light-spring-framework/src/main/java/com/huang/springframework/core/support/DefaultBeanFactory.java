@@ -270,4 +270,8 @@ public class DefaultBeanFactory implements BeanFactory, BeanDefinitionRegistry, 
     public Map<String, BeanDefinition> getBeanDefinitionMap() {
         return beanDefinitionMap;
     }
+
+    public Map<String, Object> getBeanMap() {
+        return this.beanMap;
+    }
 }

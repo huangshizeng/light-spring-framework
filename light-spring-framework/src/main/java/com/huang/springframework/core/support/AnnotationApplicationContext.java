@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.annotation.Annotation;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author hsz
@@ -79,5 +80,18 @@ public class AnnotationApplicationContext extends DefaultBeanFactory {
                 }
             }
         });
+    }
+
+    public List<Class<?>> getClassByAnnotation(Class<? extends Annotation> annotation) {
+        List<Class<?>> clazzList = new ArrayList<>();
+        List<? extends Class<?>> collect = getBeanDefinitionMap().values().stream()
+                .map(BeanDefinition::getBeanClass)
+                .collect(Collectors.toList());
+        for (Class clazz : collect) {
+            if (clazz.isAnnotationPresent(annotation)) {
+                clazzList.add(clazz);
+            }
+        }
+        return clazzList;
     }
 }
