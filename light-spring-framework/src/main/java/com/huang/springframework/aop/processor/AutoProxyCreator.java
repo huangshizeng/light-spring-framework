@@ -63,6 +63,7 @@ public class AutoProxyCreator implements EarlyReferenceBeanProcessor {
     }
 
     private Object wrapIfNecessary(Object bean) throws Exception {
+        // 如果是Advice，则跳过
         if (isInfrastructureClass(bean.getClass())) {
             return bean;
         }
@@ -92,6 +93,7 @@ public class AutoProxyCreator implements EarlyReferenceBeanProcessor {
     private List<Advisor> getMatchedAdvisors(Object bean) throws Exception {
         // 获取全部advisor
         List<Advisor> allAdvisors = findAllAdvisors();
+        // 找到可以应用于该bean的advisor
         List<Advisor> matchedAdvisors = findAdvisorsThatCanApply(allAdvisors, bean.getClass());
         if (!matchedAdvisors.isEmpty()) {
             matchedAdvisors = sortAdvisors(matchedAdvisors);
@@ -138,6 +140,7 @@ public class AutoProxyCreator implements EarlyReferenceBeanProcessor {
     private List<Advisor> findAdvisorsThatCanApply(List<Advisor> allAdvisors, Class<?> clazz) {
         List<Advisor> advisors = new ArrayList<>();
         Method[] methods = clazz.getDeclaredMethods();
+        // 先跟类匹配，再跟类中的方法匹配，只要有一个方法匹配就表示可以应用于该bean
         for (Advisor advisor : allAdvisors) {
             AspectJExpressionPointcut pointcut = advisor.getPointcut();
             if (pointcut.matchsClass(clazz)) {
