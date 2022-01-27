@@ -47,6 +47,12 @@ public class AutoProxyCreator implements EarlyReferenceBeanProcessor {
         this.beanFactory = beanFactory;
     }
 
+    /**
+     * 如果有循环依赖，会调用到这个方法，此时需要注入的是代理对象，而不是原来的bean，
+     * 所以这里会调wrapIfNecessary方法去生成aop增强的代理对象，如果有必要的话。
+     * 这样就相当于提前生成代理对象，所以再调到下面postProcessAfterInitialization方法时，
+     * 就不会再去执行生成代理的逻辑
+     */
     @Override
     public Object getEarlyBeanReference(Object bean, String beanName) throws Exception {
         earlyProxyReferences.put(beanName, bean);
@@ -68,7 +74,7 @@ public class AutoProxyCreator implements EarlyReferenceBeanProcessor {
             return bean;
         }
         // 在此判断bean是否需要进行切面增强
-        List<Advisor> matchAdvisors = getMatchedAdvisors(bean);
+        List<Advisor> matchAdvisors =  getMatchedAdvisors(bean);
         if (matchAdvisors.size() > 0) {
             // 创建代理对象
             return createProxy(bean, matchAdvisors);
